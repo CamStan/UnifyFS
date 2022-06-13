@@ -27,8 +27,26 @@ jobs:
         os: [ ubuntu-latest ]
         compiler: [ gcc ]
         gcc: [ 7, 8, 9, 10, 11 ]
+        config-options: [ --enable-fortran ]
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            gcc: 10
+            config-options: --enable-pmi
+          - os: ubuntu-latest
+            compiler: gcc
+            gcc: 10
+            config-options: --enable-pmix
+          - os: ubuntu-latest
+            compiler: gcc
+            gcc: 11
+            config-options: --enable-pmi
+          - os: ubuntu-latest
+            compiler: gcc
+            gcc: 11
+            config-options: --enable-pmix
 
-    name: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.gcc }}
+    name: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.gcc }}-${{ matrix.config-options }}
 
     runs-on: ${{ matrix.os }}
 
@@ -50,6 +68,8 @@ jobs:
         sudo apt-get install libtool-bin
         sudo apt-get install openmpi-bin
         sudo apt-get install libopenmpi-dev
+        sudo apt-get install libpmi2-pmix
+        sudo apt-get install libpmix2
 
     - name: Install Spack
       uses: kzscisoft/install-spack@v1
@@ -119,12 +139,12 @@ jobs:
         echo "GOTCHA_INSTALL=$(spack location -i gotcha)" >> $GITHUB_ENV
         echo "SPATH_INSTALL=$(spack location -i spath)" >> $GITHUB_ENV
 
-    - name: Configure and Build
+    - name: Configure and Build ${{ matrix.config-options }}
       run: |
         source $GITHUB_WORKSPACE/.spack/share/spack/setup-env.sh
         spack load gotcha && spack load argobots && spack load mercury && spack load mochi-margo && spack load spath
         ./autogen.sh
-        ./configure CC=$CC --with-gotcha=$GOTCHA_INSTALL --with-spath=$SPATH_INSTALL --enable-fortran
+        ./configure CC=$CC --with-gotcha=$GOTCHA_INSTALL --with-spath=$SPATH_INSTALL ${{ matrix.config-options }}
         make V=1
 
     - name: Unit Tests
